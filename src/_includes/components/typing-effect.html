@@ -2,16 +2,16 @@
 
     function typingEffectComponent() {
         return {
-            text: ['', ''],
-            cursors: [{hidden: true, enabled: false}, {hidden: true, enabled: false}],
+            lines: [
+                {text: '', cursor: {hidden: true, enabled: false}},
+                {text: '', cursor: {hidden: true, enabled: false}}
+            ],
             cursorToggleTime: 500,
             typingDelay: 100,
             init() {
                 this.enableCursor(0)
-                setInterval(() => {
-                    this.cursors.forEach((cursor, index) => this.cursors[index].hidden = !cursor.hidden)
-                }, this.cursorToggleTime);
 
+                // typing scenario
                 this.type(0, 'Hi, I\'m Konrad.<br> I break', 0).then(() => {
                     this.undo(0, 12, 1000).then(() => {
                         this.disableCursor(0)
@@ -20,6 +20,10 @@
                     })
                 })
 
+                // cursors blinking
+                setInterval(() => {
+                    this.lines.forEach((line, index) => this.lines[index].cursor.hidden = !line.cursor.hidden)
+                }, this.cursorToggleTime);
             },
             type(lineNumber, text, wait) {
                 return new Promise((resolve) => {
@@ -27,7 +31,7 @@
                         if (text.length === 0) {
                             resolve()
                         } else {
-                            this.text[lineNumber] += text.charAt(0)
+                            this.lines[lineNumber].text += text.charAt(0)
                             setTimeout(() => this.type(lineNumber, text.substring(1), 0).then(() => {
                                 resolve()
                             }), this.typingDelay)
@@ -41,7 +45,7 @@
                         if (charsNumbers < 1) {
                             resolve()
                         } else {
-                            this.text[lineNumber] = this.text[lineNumber].substr(0, this.text[lineNumber].length - 1)
+                            this.lines[lineNumber].text = this.lines[lineNumber].text.substr(0, this.lines[lineNumber].text.length - 1)
                             setTimeout(() => this.undo(lineNumber, charsNumbers - 1, 0).then(() => {
                                 resolve()
                             }), this.typingDelay)
@@ -50,11 +54,11 @@
 
                 })
             },
-            enableCursor(cursorId) {
-                this.cursors[cursorId].enabled = true
+            enableCursor(lineNumber) {
+                this.lines[lineNumber].cursor.enabled = true
             },
-            disableCursor(cursorId) {
-                this.cursors[cursorId].enabled = false
+            disableCursor(lineNumber) {
+                this.lines[lineNumber].cursor.enabled = false
             }
         }
     }
@@ -64,22 +68,15 @@
 
 <div x-cloak x-data="typingEffectComponent()" x-init="init">
 
-    <div class="relative mx-4 h-auto">
-        <div class="inline-block">
-            <h1 class="text-7xl font-black" x-text="text[0]"></h1>
+    <template x-for="line in lines" :key="line">
+        <div class="relative mx-4 h-auto">
+            <div class="inline-block">
+                <h1 class="text-7xl font-black" x-text="line.text"></h1>
+            </div>
+            <span class="absolute h-full w-3 ml-1 bg-black"
+                  x-bind:class="{ 'hidden': line.cursor.hidden || !line.cursor.enabled }"></span>
         </div>
-        <span class="absolute h-full w-3 ml-1 bg-black"
-              x-bind:class="{ 'hidden': cursors[0].hidden || !cursors[0].enabled }"></span>
-    </div>
-
-    <div class="relative mx-4 h-auto">
-        <div class="inline-block">
-            <h1 class="text-7xl font-black" x-text="text[1]"></h1>
-        </div>
-        <span class="absolute h-full w-3 ml-1 bg-black"
-              x-bind:class="{ 'hidden': cursors[1].hidden || !cursors[1].enabled }"></span>
-    </div>
-
+    </template>
 
 </div>
 
