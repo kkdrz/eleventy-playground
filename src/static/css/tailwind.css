@@ -4,6 +4,10 @@
 
 /*Your Custom CSS Goes here*/
 
+[x-cloak] {
+    display: none !important;
+}
+
 h1 {
     @apply text-4xl tracking-tighter mb-3 lg:text-7xl;
 }

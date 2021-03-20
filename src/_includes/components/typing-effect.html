@@ -1,100 +1,84 @@
-<div x-data="{ text: ['',''], cursors: ['cursor0', 'cursor1'], cursorToggleTime: 420, typingDelay: 80 }" x-init="(() => {
+<script>
 
-    type(0, 'Hi, I\'m Konrad.<br> I break', 500).then(() => {
-        undo(0, 12, 1000).then(() => {
-            type(1, 'I program things.', 500).then(() => {
-                enableCursor($data.cursors[1])
-            })
-        })
-    })
+    function typingEffectComponent() {
+        return {
+            text: ['', ''],
+            cursors: [{hidden: true, enabled: false}, {hidden: true, enabled: false}],
+            cursorToggleTime: 500,
+            typingDelay: 100,
+            init() {
+                this.enableCursor(0)
+                setInterval(() => {
+                    this.cursors.forEach((cursor, index) => this.cursors[index].hidden = !cursor.hidden)
+                }, this.cursorToggleTime);
 
-    function type(lineNumber, text, wait) {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                if (text.length === 0) {
-                    console.log('type end')
-                    disableCursor($data.cursors[lineNumber])
-                    resolve()
-                } else {
-                    console.log('type: ' + text.charAt(0))
-                    $data.text[lineNumber] += text.charAt(0)
-                    enableCursor($data.cursors[lineNumber])
-                    setTimeout(() => type(lineNumber, text.substring(1), 0).then(() => {
-                        resolve()
-                    }), $data.typingDelay)
-                }
-            }, wait)
-        })
-    }
+                this.type(0, 'Hi, I\'m Konrad.<br> I break', 0).then(() => {
+                    this.undo(0, 12, 1000).then(() => {
+                        this.disableCursor(0)
+                        this.enableCursor(1)
+                        this.type(1, 'I program things.', 0)
+                    })
+                })
 
+            },
+            type(lineNumber, text, wait) {
+                return new Promise((resolve) => {
+                    setTimeout(() => {
+                        if (text.length === 0) {
+                            resolve()
+                        } else {
+                            this.text[lineNumber] += text.charAt(0)
+                            setTimeout(() => this.type(lineNumber, text.substring(1), 0).then(() => {
+                                resolve()
+                            }), this.typingDelay)
+                        }
+                    }, wait)
+                })
+            },
+            undo(lineNumber, charsNumbers, wait) {
+                return new Promise((resolve) => {
+                    setTimeout(() => {
+                        if (charsNumbers < 1) {
+                            resolve()
+                        } else {
+                            this.text[lineNumber] = this.text[lineNumber].substr(0, this.text[lineNumber].length - 1)
+                            setTimeout(() => this.undo(lineNumber, charsNumbers - 1, 0).then(() => {
+                                resolve()
+                            }), this.typingDelay)
+                        }
+                    }, wait)
 
-    function undo(lineNumber, charsNumbers, wait) {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                if (charsNumbers < 1) {
-                    console.log('undo end')
-                    disableCursor($data.cursors[lineNumber])
-                    resolve()
-                } else {
-                    console.log('undo: ' + $data.text[lineNumber].charAt($data.text[lineNumber].length - 1))
-                    $data.text[lineNumber] = $data.text[lineNumber].substr(0, $data.text[lineNumber].length - 1)
-                    enableCursor($data.cursors[lineNumber])
-                    setTimeout(() => undo(lineNumber, charsNumbers - 1, 0).then(() => {
-                        resolve()
-                    }), $data.typingDelay)
-                }
-            }, wait)
-
-        })
-    }
-
-    function enableCursor(cursor) {
-        console.log('Enable: ' + cursor)
-        console.log($refs['cursor0'])
-        if (!$refs[cursor].classList.contains('enabled')) {
-            $refs[cursor].classList.add('enabled')
-        }
-    }
-
-    function disableCursor(cursor) {
-        if ($refs[cursor].classList.contains('enabled')) {
-            $refs[cursor].classList.remove('enabled')
-        }
-    }
-
-    function toggleCursor(cursor) {
-        if ($refs[cursor].classList.contains('enabled')) {
-            if($refs[cursor].classList.contains('hidden')){
-                        $refs[cursor].classList.remove('hidden');
-                    } else {
-                        $refs[cursor].classList.add('hidden');
-                    }
-         } else {
-            if(!$refs[cursor].classList.contains('hidden')){
-                $refs[cursor].classList.add('hidden');
+                })
+            },
+            enableCursor(cursorId) {
+                this.cursors[cursorId].enabled = true
+            },
+            disableCursor(cursorId) {
+                this.cursors[cursorId].enabled = false
             }
-         }
+        }
     }
 
-    setInterval(toggleCursor, $data.cursorToggleTime, $data.cursors[0]);
-    setInterval(toggleCursor, $data.cursorToggleTime, $data.cursors[1]);
-
-})()">
+</script>
 
 
-        <div class="relative mx-4 h-auto">
-            <div class="inline-block">
-                <h1 class="text-7xl font-black" x-text="text[0]"></h1>
-            </div>
-            <span class="absolute h-full w-3 ml-1 bg-black" :x-ref="cursors[0]"></span>
+<div x-cloak x-data="typingEffectComponent()" x-init="init">
+
+    <div class="relative mx-4 h-auto">
+        <div class="inline-block">
+            <h1 class="text-7xl font-black" x-text="text[0]"></h1>
         </div>
+        <span class="absolute h-full w-3 ml-1 bg-black"
+              x-bind:class="{ 'hidden': cursors[0].hidden || !cursors[0].enabled }"></span>
+    </div>
 
-        <div class="relative mx-4 h-auto">
-            <div class="inline-block">
-                <h1 class="text-7xl font-black" x-text="text[1]"></h1>
-            </div>
-            <span class="absolute h-full w-3 ml-1 bg-black" :x-ref="cursors[1]"></span>
+    <div class="relative mx-4 h-auto">
+        <div class="inline-block">
+            <h1 class="text-7xl font-black" x-text="text[1]"></h1>
         </div>
+        <span class="absolute h-full w-3 ml-1 bg-black"
+              x-bind:class="{ 'hidden': cursors[1].hidden || !cursors[1].enabled }"></span>
+    </div>
 
 
 </div>
